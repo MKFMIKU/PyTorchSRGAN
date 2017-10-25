@@ -63,14 +63,9 @@ class Generator(nn.Module):
         self.conv2 = nn.Conv2d(inchannels, 64, 3, stride=1, padding=1)
         self.conv2_bn = nn.BatchNorm2d(64)
 
-        in_channels = 64
-        out_channels = 256
-        for i in range(self.upsample):
-            self.add_module('upsample' + str(i+1), upsampleBlock(in_channels, out_channels))
-            in_channels = out_channels
-            out_channels = out_channels/2
+        self.conv_upsample = upsampleBlock(64, 256)
 
-        self.conv3 = nn.Conv2d(in_channels, 3, 9, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(256, 3, 9, stride=1, padding=1)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -80,8 +75,7 @@ class Generator(nn.Module):
 
         x = F.elu(self.conv2_bn(self.conv2(x)))
 
-        for i in range(self.upsample):
-            x = self.__getattr__('upsample' + str(i+1))(x)
+        x = self.conv_upsample(x)
 
         return self.conv3(x)
 

@@ -73,7 +73,7 @@ assert dataset
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                          shuffle=True, num_workers=int(opt.workers))
 
-netG = Generator(6, opt.upSampling)
+netG = Generator(n_dense_blocks=6, upsample=opt.upSampling)
 #netG.apply(weights_init)
 if opt.netG != '':
     netG.load_state_dict(torch.load(opt.netG))
