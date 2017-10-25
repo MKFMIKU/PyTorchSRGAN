@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Implements SRGAN models: https://arxiv.org/abs/1609.04802
-
 TODO:
     * Try to make this work with SELU
 """
