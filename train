@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 from tensorboard_logger import configure, log_value
 
 from models import Generator, Discriminator, FeatureExtractor
-from utils import Visualizer
+from utils import Visualizer, save_checkpoint
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='cifar100', help='cifar10 | cifar100 | folder')
@@ -104,6 +104,10 @@ if opt.cuda:
     target_real = target_real.cuda()
     target_fake = target_fake.cuda()
 
+if opt.cuda and opt.nGPU:
+    netG = nn.DataParallel(netG, device_ids=[i for i in range(0, opt.nGPU)]).cuda()
+    netD = nn.DataParallel(netD, device_ids=[i for i in range(0, opt.nGPU)]).cuda()
+
 optimG = optim.Adam(netG.parameters(), lr=opt.lrG)
 optimD = optim.SGD(netD.parameters(), lr=opt.lrD, momentum=0.9, nesterov=True)
 
@@ -150,7 +154,7 @@ for epoch in range(50):
         # visualizer.show(inputsG, inputsD_real.cpu().data, inputsD_fake.cpu().data)
 
     log_value('G_pixel_loss', lossG_content.data[0], epoch)
-    torch.save(netG.state_dict(), '%s/netG_pretrain_%d.pth' % (opt.out, epoch))
+    save_checkpoint(netG, epoch, 'G')
 
 
 print('Adversarial training')
@@ -209,15 +213,16 @@ for epoch in range(opt.nEpochs):
         optimG.step()
 
         # Status and display
-        print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G (Content/Advers): %.4f/%.4f D(x): %.4f D(G(z)): %.4f'
+        if i % 10 ==0:
+            print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G (Content/Advers): %.4f/%.4f D(x): %.4f D(G(z)): %.4f'
               % (epoch, opt.nEpochs, i, len(dataloader),
                  (lossD_real + lossD_fake).data[0], lossG_content.data[0], lossG_adversarial.data[0], D_real, D_fake,))
-        visualizer.show(inputsG, inputsD_real.cpu().data, inputsD_fake.cpu().data)
+            # visualizer.show(inputsG, inputsD_real.cpu().data, inputsD_fake.cpu().data)
 
     log_value('G_content_loss', lossG_content.data[0], epoch)
     log_value('G_advers_loss', lossG_adversarial.data[0], epoch)
     log_value('D_advers_loss', (lossD_real + lossD_fake).data[0], epoch)
 
     # Do checkpointing
-    torch.save(netG.state_dict(), '%s/netG_epoch_%d.pth' % (opt.out, epoch))
-    torch.save(netD.state_dict(), '%s/netD_epoch_%d.pth' % (opt.out, epoch))
+    save_checkpoint(netG,epoch,'G')
+    save_checkpoint(netD, epoch, 'D')

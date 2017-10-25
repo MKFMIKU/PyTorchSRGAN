@@ -5,10 +5,24 @@ TODO:
 """
 
 import random
+import os
+import torch
 
 from torchvision import transforms
 from torchvision.utils import make_grid
 import matplotlib.pyplot as plt
+
+
+def save_checkpoint(model, epoch, tag):
+    model_folder = "pretrained/"
+    model_out_path = model_folder + tag + "_model_epoch_{}.pth".format(epoch)
+    state = {"epoch": epoch, "model": model}
+    if not os.path.exists(model_folder):
+        os.makedirs(model_folder)
+
+    torch.save(state, model_out_path)
+
+    print("Checkpoint saved to {}".format(model_out_path))
 
 class Visualizer:
     def __init__(self, show_step=10, image_size=(30,30)):
