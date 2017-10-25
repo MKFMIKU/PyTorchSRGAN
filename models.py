@@ -42,7 +42,7 @@ class upsampleBlock(nn.Module):
     # Implements resize-convolution
     def __init__(self, in_channels, out_channels):
         super(upsampleBlock, self).__init__()
-        self.upsample1 = nn.Upsample(scale_factor=2, mode='nearest')
+        self.upsample1 = nn.UpsamplingBilinear2d(scale_factor=2)
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, stride=1, padding=1)
 
     def forward(self, x):
