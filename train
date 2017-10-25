@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from __future__ import print_function
 
 import argparse
 import os
@@ -76,17 +77,17 @@ netG = Generator(6, opt.upSampling)
 #netG.apply(weights_init)
 if opt.netG != '':
     netG.load_state_dict(torch.load(opt.netG))
-print netG
+print(netG)
 
 netD = Discriminator()
 #netD.apply(weights_init)
 if opt.netD != '':
     netD.load_state_dict(torch.load(opt.netD))
-print netD
+print(netD)
 
 # For the content loss
 feature_extractor = FeatureExtractor(torchvision.models.vgg19(pretrained=True))
-print feature_extractor
+print(feature_extractor)
 content_criterion = nn.MSELoss()
 adversarial_criterion = nn.BCELoss()
 
@@ -112,7 +113,7 @@ visualizer = Visualizer()
 inputsG = torch.FloatTensor(opt.batchSize, 3, opt.imageSize, opt.imageSize)
 
 # Pre-train generator
-print 'Generator pre-training'
+print('Generator pre-training')
 for epoch in range(50):
     for i, data in enumerate(dataloader):
         # Generate data
@@ -149,7 +150,7 @@ for epoch in range(50):
     torch.save(netG.state_dict(), '%s/netG_pretrain_%d.pth' % (opt.out, epoch))
 
 
-print 'Adversarial training'
+print('Adversarial training')
 for epoch in range(opt.nEpochs):
     for i, data in enumerate(dataloader):
         # Generate data
