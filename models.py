@@ -7,6 +7,7 @@ TODO:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.init as init
 import numpy as np
 
 class FeatureExtractor(nn.Module):
@@ -37,47 +38,31 @@ class denseNet(nn.Module):
             x = torch.cat((x,y), dim=1)
         return x
 
-class upsampleBlock(nn.Module):
-    # Implements resize-convolution
-    def __init__(self, in_channels, out_channels):
-        super(upsampleBlock, self).__init__()
-        self.upsample1 = nn.UpsamplingBilinear2d(scale_factor=2)
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, stride=1, padding=1)
-
-    def forward(self, x):
-        return F.elu(self.conv1(self.upsample1(x)))
-
 class Generator(nn.Module):
-    def __init__(self, n_dense_blocks, upsample):
+    def __init__(self, upscale_factor):
         super(Generator, self).__init__()
-        self.n_dense_blocks = n_dense_blocks
-        self.upsample = upsample
 
-        self.conv1 = nn.Conv2d(3, 64, 9, stride=1, padding=1)
+        self.relu = nn.ReLU()
+        self.conv1 = nn.Conv2d(3, 64, (5, 5), (1, 1), (2, 2))
+        self.conv2 = nn.Conv2d(64, 64, (3, 3), (1, 1), (1, 1))
+        self.conv3 = nn.Conv2d(64, 32, (3, 3), (1, 1), (1, 1))
+        self.conv4 = nn.Conv2d(32, 3*upscale_factor ** 2, (3, 3), (1, 1), (1, 1))
+        self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
 
-        inchannels = 64
-        for i in range(self.n_dense_blocks):
-            self.add_module('denseNet' + str(i+1), denseNet(inchannels, 12, 4))
-            inchannels += 12*4
-
-        self.conv2 = nn.Conv2d(inchannels, 64, 3, stride=1, padding=1)
-        self.conv2_bn = nn.BatchNorm2d(64)
-
-        self.conv_upsample = upsampleBlock(64, 256)
-
-        self.conv3 = nn.Conv2d(256, 3, 9, stride=1, padding=1)
+        self._initialize_weights()
 
     def forward(self, x):
-        x = self.conv1(x)
+        x = self.relu(self.conv1(x))
+        x = self.relu(self.conv2(x))
+        x = self.relu(self.conv3(x))
+        x = self.pixel_shuffle(self.conv4(x))
+        return x
 
-        for i in range(self.n_dense_blocks):
-            x = self.__getattr__('denseNet' + str(i+1))(x)
-
-        x = F.elu(self.conv2_bn(self.conv2(x)))
-
-        x = self.conv_upsample(x)
-
-        return self.conv3(x)
+    def _initialize_weights(self):
+        init.orthogonal(self.conv1.weight, init.calculate_gain('relu'))
+        init.orthogonal(self.conv2.weight, init.calculate_gain('relu'))
+        init.orthogonal(self.conv3.weight, init.calculate_gain('relu'))
+        init.orthogonal(self.conv4.weight)
 
 class Discriminator(nn.Module):
     def __init__(self):

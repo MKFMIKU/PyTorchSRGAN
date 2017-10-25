@@ -73,7 +73,7 @@ assert dataset
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                          shuffle=True, num_workers=int(opt.workers))
 
-netG = Generator(n_dense_blocks=6, upsample=opt.upSampling)
+netG = Generator(2)
 #netG.apply(weights_init)
 if opt.netG != '':
     netG.load_state_dict(torch.load(opt.netG))
@@ -132,9 +132,12 @@ for epoch in range(50):
             inputsD_real = Variable(inputs)
             inputsD_fake = netG(Variable(inputsG))
 
+        # print("INPUT", inputs.size(), "INPUTG", inputsG.size(), "FAKE", inputsD_fake.size())
+
+
         ######### Train generator #########
         netG.zero_grad()
-
+        # print("FAKE", inputsD_fake.size(), "REAL", inputsD_real.size())
         lossG_content = content_criterion(inputsD_fake, inputsD_real)
         lossG_content.backward()
 
@@ -144,7 +147,7 @@ for epoch in range(50):
         # Status and display
         print('[%d/%d][%d/%d] Loss_G: %.4f'
               % (epoch, 50, i, len(dataloader), lossG_content.data[0],))
-        visualizer.show(inputsG, inputsD_real.cpu().data, inputsD_fake.cpu().data)
+        # visualizer.show(inputsG, inputsD_real.cpu().data, inputsD_fake.cpu().data)
 
     log_value('G_pixel_loss', lossG_content.data[0], epoch)
     torch.save(netG.state_dict(), '%s/netG_pretrain_%d.pth' % (opt.out, epoch))
@@ -169,7 +172,7 @@ for epoch in range(opt.nEpochs):
             inputsD_real = Variable(inputs)
             inputsD_fake = netG(Variable(inputsG))
 
-
+            
         ######### Train discriminator #########
         netD.zero_grad()
 
